@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"time"
+	"strings"
 
 	"github.com/flynn/flynn/controller/client"
 	ct "github.com/flynn/flynn/controller/types"
@@ -53,6 +54,18 @@ func run() error {
 
 	log.Printf("listening for GitHub webhooks on port %s...\n", port)
 	return http.ListenAndServe(":"+port, server)
+}
+
+func generateCloneUrl(url string) string {
+	githubUser := os.Getenv("GITHUB_USER")
+	githubPwd := os.Getenv("GITHUB_PWD")
+
+	if githubUser != "" && githubPwd != "" {
+		newHost := "https://" + githubUser + ":" + githubPwd + "@" + "github.com"
+		return strings.Replace(url, "https://github.com", newHost, -1)
+	}
+
+	return url
 }
 
 func setupDB(db *postgres.DB) error {
@@ -268,7 +281,7 @@ func (s *Server) webhook(w http.ResponseWriter, req *http.Request, _ httprouter.
 		return
 	}
 
-	go s.deploy(repo.App, event.Repository.CloneURL, branch, event.HeadCommit.ID)
+	go s.deploy(repo.App, generateCloneUrl(event.Repository.CloneURL), branch, event.HeadCommit.ID)
 }
 
 func (s *Server) deploy(app, url, branch, commit string) {
