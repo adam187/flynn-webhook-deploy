@@ -92,14 +92,19 @@ func newControllerClient() (controller.Client, error) {
 }
 
 func NewServer(db *postgres.DB, client controller.Client, secretToken []byte) *Server {
+	gui := os.Getenv("GUI")
 	s := &Server{db: db, client: client, secretToken: secretToken}
 	s.router = httprouter.New()
 	s.router.POST("/", s.webhook)
-	s.router.GET("/", s.index)
-	s.router.GET("/repos.json", s.getRepos)
-	s.router.POST("/repos", s.createRepo)
-	s.router.GET("/apps.json", s.getApps)
-	s.router.ServeFiles("/assets/*filepath", http.Dir("assets"))
+
+	if (gui != "") {
+		s.router.GET("/", s.index)
+		s.router.GET("/repos.json", s.getRepos)
+		s.router.POST("/repos", s.createRepo)
+		s.router.GET("/apps.json", s.getApps)
+		s.router.ServeFiles("/assets/*filepath", http.Dir("assets"))
+	}
+
 	return s
 
 }
